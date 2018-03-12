@@ -117,30 +117,30 @@ def send_command():
 
 #-- Key event function
 def key(history):
-    global jaw_angle, jaw_delta, velocity_x, velocity_y, velocity_z
+    global gnd_speed, jaw_angle, jaw_delta, velocity_x, velocity_y, velocity_z
 
     if 'r' in history:
         print("r pressed >> Set the vehicle to RTL")
         stop=True
         vehicle.mode = VehicleMode("RTL")
-    elif 'space' in history:
-        print("STOP")
-        velocity_x = velocity_y = velocity_z = 0;
+        return
 
-    elif 'w' in history:  # up
-            velocity_z = -elev_speed
-    elif 's' in history:  # down
-        velocity_z = elev_speed
-    elif 'a' in history:  # shift left
-        velocity_y = -gnd_speed
-    elif 'd' in history:  # shift right
-        velocity_y = gnd_speed
+    if 'space' in history:
+        vehicle.mode = VehicleMode("GUIDED")
+        return
 
-    if 'Up' in history:  # move front
-        velocity_x = gnd_speed
-    elif 'Down' in history: # move back
-        velocity_x = -gnd_speed
-    elif 'Left' in history: # turn left            
+    if '1' in history:
+        gnd_speed = 5
+    elif '2' in history:
+        gnd_speed = 10
+    elif '3' in history:
+        gnd_speed = 15
+
+    velocity_x = -gnd_speed if 'Down' in history else gnd_speed if 'Up' in history else 0
+    velocity_y = -gnd_speed if 'a' in history else gnd_speed if 'd' in history else 0
+    velocity_z = -elev_speed if 'w' in history else elev_speed if 's' in history else 0
+    
+    if 'Left' in history: # turn left            
         jaw_angle -= jaw_delta
         if jaw_angle < 0:
             jaw_angle += 360            
