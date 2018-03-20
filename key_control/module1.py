@@ -3,7 +3,6 @@
 Simple script for take off and control with arrow keys
 """
 
-
 import time
 from threading import Thread
 from dronekit import connect, VehicleMode, LocationGlobalRelative, Command, LocationGlobal
@@ -12,11 +11,6 @@ from pymavlink import mavutil
 #- Importing Tkinter: sudo apt-get install python-tk
 import Tkinter as tk
 
-
-#-- Connect to the vehicle
-print('Connecting...')
-vehicle = connect('udp:10.0.75.1:14551')
-
 #-- Setup the commanded flying speed
 gnd_speed = 5 # [m/s]
 elev_speed = 1 # [m/s]
@@ -24,13 +18,11 @@ elev_speed = 1 # [m/s]
 #-- Setup the commanded jaw degree
 jaw_delta = 10 # [deg]
 
-#-- Setup initial jaw angle
-jaw_angle = 0 # [deg]
-
-#-- global control variables
+#-- Global control variables
 velocity_x = 0
 velocity_y = 0
 velocity_z = 0
+jaw_angle = 0
 stop = False
 
 
@@ -45,7 +37,8 @@ def arm_and_takeoff(altitude):
    vehicle.mode = VehicleMode("GUIDED")
    vehicle.armed = True
 
-   while not vehicle.armed: time.sleep(1)
+   while not vehicle.armed:
+       time.sleep(1)
 
    print("Taking Off")
    vehicle.simple_takeoff(altitude)
@@ -58,8 +51,8 @@ def arm_and_takeoff(altitude):
           break
       time.sleep(1)
       
-	  
- #-- Define the function for sending mavlink velocity command in body frame
+
+#-- Define the function for sending mavlink velocity command in body frame
 def set_velocity_body(vehicle, vx, vy, vz):
     """ Remember: vz is positive downward!!!
     http://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html
@@ -68,10 +61,7 @@ def set_velocity_body(vehicle, vx, vy, vz):
     (a value of 0b0000000000000000 or 0b0000001000000000 indicates that 
     none of the setpoint dimensions should be ignored). Mapping: 
     bit 1: x,  bit 2: y,  bit 3: z, 
-    bit 4: vx, bit 5: vy, bit 6: vz, 
-    bit 7: ax, bit 8: ay, bit 9: az
-    
-    
+    bit 4: vx, bit 5: vy, bit 6: vz
     """
     msg = vehicle.message_factory.set_position_target_local_ned_encode(
             0, # time_boot_ms (not used)
@@ -99,7 +89,7 @@ def set_condition_yaw(vehicle, heading, relative=False):
         0, #confirmation
         heading,    # param 1, yaw in degrees
         0,          # param 2, yaw speed deg/s
-        0,          # param 3, direction -1 ccw, 1 cw
+        1,          # param 3, direction -1 ccw, 1 cw
         is_relative, # param 4, relative offset 1, absolute angle 0
         0, 0, 0)    # param 5 ~ 7 not used
     # send command to vehicle
@@ -130,11 +120,15 @@ def key(history):
         return
 
     if '1' in history:
-        gnd_speed = 5
+        gnd_speed =  5 # 18 km/h
     elif '2' in history:
-        gnd_speed = 10
+        gnd_speed = 10 # 36 km/h
     elif '3' in history:
-        gnd_speed = 15
+        gnd_speed = 15 # 54 km/h
+    elif '4' in history:
+        gnd_speed = 20 # 72 km/h
+    elif '5' in history:
+        gnd_speed = 25 # 90 km/h
 
     velocity_x = -gnd_speed if 'Down' in history else gnd_speed if 'Up' in history else 0
     velocity_y = -gnd_speed if 'a' in history else gnd_speed if 'd' in history else 0
@@ -144,12 +138,10 @@ def key(history):
         jaw_angle -= jaw_delta
         if jaw_angle < 0:
             jaw_angle += 360            
-        print("jaw: %d" % jaw_angle)
     elif 'Right' in history:  # turn right
         jaw_angle += jaw_delta
         if jaw_angle > 360:
             jaw_angle -= 360
-        print("jaw: %d" % jaw_angle)
 
 
 history = []
@@ -158,22 +150,55 @@ def keyup(event):
         history.pop(history.index(event.keysym))
         key(history)
 
+
 def keydown(event):
     if not event.keysym in history :
         history.append(event.keysym)
         key(history)
 
 
-#---- MAIN FUNCTION
-#- Takeoff
-arm_and_takeoff(10)
-Thread(target=send_command).start()
- 
-#- Read the keyboard with tkinter
-root = tk.Tk()
-print(">> Control the drone with the arrow keys. Press r for RTL mode")
 
-#root.bind_all('<Key>', key)
-root.bind_all("<KeyPress>", keydown)
-root.bind_all("<KeyRelease>", keyup)
-root.mainloop()
+
+class Demo1:
+    def __init__(self, master):
+        self.master = master
+        self.frame = tk.Frame(self.master)
+        self.button1 = tk.Button(self.frame, text = 'New Window', width = 25, command = self.new_window)
+        self.button1.pack()
+        self.frame.pack()
+    def new_window(self):
+        self.newWindow = tk.Toplevel(self.master)
+        self.app = Demo2(self.newWindow)
+
+class Demo2:
+    def __init__(self, master):
+        self.master = master
+        self.frame = tk.Frame(self.master)
+        self.quitButton = tk.Button(self.frame, text = 'Quit', width = 25, command = self.close_windows)
+        self.quitButton.pack()
+        self.frame.pack()
+    def close_windows(self):
+        self.master.destroy()
+
+
+
+if __name__ == "__main__":
+    #-- Connect to the vehicle
+    print('Connecting...')
+    vehicle = connect('udp:10.0.75.1:14551')
+
+    #---- MAIN FUNCTION
+    #- Takeoff
+    arm_and_takeoff(10)
+    Thread(target=send_command).start()
+
+    root = tk.Tk()
+    root.geometry('460x350')
+    app = Demo1(root)
+
+    root.bind_all("<KeyPress>", keydown)
+    root.bind_all("<KeyRelease>", keyup)
+    
+    root.mainloop()
+ 
+ 
