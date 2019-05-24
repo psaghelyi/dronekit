@@ -4,7 +4,7 @@ Simple script for take off and control with arrow keys
 """
 
 import time
-from threading import Thread
+import threading
 from dronekit import connect, VehicleMode, LocationGlobalRelative, Command, LocationGlobal
 from pymavlink import mavutil
 
@@ -23,7 +23,7 @@ velocity_x = 0
 velocity_y = 0
 velocity_z = 0
 jaw_angle = 0
-stop = False
+signal = False
 
 
 #-- Define arm and takeoff
@@ -97,26 +97,48 @@ def set_condition_yaw(vehicle, heading, relative=False):
     vehicle.flush()
 
 
-def send_command():
-    global jaw_angle, velocity_x, velocity_y, velocity_z, stop
-    while not stop: 
-        set_velocity_body(vehicle, velocity_x, velocity_y, velocity_z)
-        set_condition_yaw(vehicle,jaw_angle)
-        time.sleep(1)
+def send_command(stop_event, arg):
+    global jaw_angle, velocity_x, velocity_y, velocity_z, signal    
+    while not stop_event.wait(1):
+        if signal:
+            set_velocity_body(vehicle, velocity_x, velocity_y, velocity_z)
+            set_condition_yaw(vehicle,jaw_angle)
+    print("send_command loop is stopping.")
 
 
 #-- Key event function
 def key(history):
-    global gnd_speed, jaw_angle, jaw_delta, velocity_x, velocity_y, velocity_z
+    global gnd_speed, jaw_angle, jaw_delta, velocity_x, velocity_y, velocity_z, signal
+
+    if 't' in history:
+        print("t pressed >> Arm and take off")
+        arm_and_takeoff(10)
+        signal = True
+        return
 
     if 'r' in history:
-        print("r pressed >> Set the vehicle to RTL")
-        stop=True
+        print("r pressed >> Set the vehicle mode to RTL")
+        #signal = False
         vehicle.mode = VehicleMode("RTL")
         return
 
+    if 'l' in history:
+        print("l pressed >> Set the vehicle mode to LAND")
+        signal = False
+        vehicle.mode = VehicleMode("LAND")
+        return
+
     if 'space' in history:
+        print("Space pressed >> Set the vehicle mode to GUIDED")
         vehicle.mode = VehicleMode("GUIDED")
+        while not vehicle.mode.name=='GUIDED':  #Wait until mode has changed
+            print(" Waiting for mode change ...")
+            time.sleep(1)
+        velocity_x = 0
+        velocity_y = 0
+        velocity_z = 0
+        jaw_angle = 0
+        signal = True
         return
 
     if '1' in history:
@@ -159,7 +181,7 @@ def keydown(event):
 
 
 
-class Demo1:
+class MainWnd:
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)
@@ -168,9 +190,9 @@ class Demo1:
         self.frame.pack()
     def new_window(self):
         self.newWindow = tk.Toplevel(self.master)
-        self.app = Demo2(self.newWindow)
+        self.app = ChildWnd(self.newWindow)
 
-class Demo2:
+class ChildWnd:
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)
@@ -185,20 +207,31 @@ class Demo2:
 if __name__ == "__main__":
     #-- Connect to the vehicle
     print('Connecting...')
-    vehicle = connect('udp:10.0.75.1:14551')
+    vehicle = connect('udp:0.0.0.0:14551')
+    print(vehicle.mode.name)
 
-    #---- MAIN FUNCTION
-    #- Takeoff
-    arm_and_takeoff(10)
-    Thread(target=send_command).start()
+    #-- Start the comand sender thread
+    pill2kill = threading.Event()
+    t = threading.Thread(target=send_command, args=(pill2kill, "loop1"))
+    t.start()
 
+    #-- Init main window and start main loop
     root = tk.Tk()
-    root.geometry('460x350')
-    app = Demo1(root)
+    root.geometry('200x100')
+    app = MainWnd(root)
 
     root.bind_all("<KeyPress>", keydown)
     root.bind_all("<KeyRelease>", keyup)
     
     root.mainloop()
  
- 
+    #-- Stop command sender thread
+    pill2kill.set()
+    t.join()
+
+    #-- Close the connection to the drone
+    print("Close vehicle object")
+    vehicle.close()
+
+    #-- Close tkinter 
+    root.quit()
