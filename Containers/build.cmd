@@ -1,2 +1,2 @@
-docker build --tag psaghelyi/dronekit:ubuntu .
+docker build --tag psaghelyi/dronekit:python2 .
 

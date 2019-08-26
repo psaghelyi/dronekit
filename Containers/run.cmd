@@ -1,1 +1,1 @@
-docker run -it --rm psaghelyi/dronekit:ubuntu
+docker run -it --rm psaghelyi/dronekit:python2

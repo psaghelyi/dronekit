@@ -1,16 +1,14 @@
-FROM ubuntu
+FROM python:2
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends apt-utils && \
-    apt-get install -y python python-dev python-pip && \
-    rm -rf /var/lib/apt/lists/*
+WORKDIR /usr/src/app
 
-RUN pip install --upgrade pip
-RUN pip install mavproxy dronekit dronekit-sitl
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./sitl sitl
 COPY ./mavproxy mavproxy
 COPY ./start.sh start.sh
+
 CMD ./start.sh
 
 #EXPOSE 14551:14551/udp
