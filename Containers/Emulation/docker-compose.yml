@@ -1,11 +1,11 @@
 version: "3"
 services:
   simulator:
-    build: Simulator
+    build: ./Simulator
     ports:
       - "5760:5760"
   proxy:
-    build: proxy
+    build: ./MAVProxy
     depends_on: 
       - simulator
     tty: true
