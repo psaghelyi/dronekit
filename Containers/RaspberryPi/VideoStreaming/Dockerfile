@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y \
     git
 
 RUN git clone https://gist.github.com/d8abbcae85a76d69b228827e2d9e4d72.git sqwk
-COPY sqwk/. sqwk/.
 
 RUN chmod +x sqwk/gstreamer.sh
 
