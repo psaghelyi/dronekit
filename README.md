@@ -20,7 +20,7 @@ network={
 
 **Configure RaspberryPi:**
 
-`sudo raspi-config`
+`$ sudo raspi-config`
 
 -   Change password
 -   Enable serial, disable boot logs export to serial
@@ -28,7 +28,7 @@ network={
 
  **Check/set ttyAMA0 speed:**
 
-`sudo stty -F /dev/ttyAMA0 921600`
+`$ sudo stty -F /dev/ttyAMA0 921600`
 
 Edit `/boot/config.txt`:
 
@@ -48,25 +48,39 @@ dtoverlay=pi3-disable-bt
 
 **Update Raspbian:**
 
-`sudo apt-get update`
+`$ sudo apt-get update`
 
-`sudo apt-get -y dist-upgrade`
+`$ sudo apt-get -y dist-upgrade`
 
 **Optionally Install camera module:**
 
-`sudo modprobe bcm2835-v4l2 gst_v4l2src_is_broken=1`
+`$ sudo modprobe bcm2835-v4l2 gst_v4l2src_is_broken=1`
 
 **Optionally change swap size to 1024:**
 
-`sudo nano /etc/dphys-swapfile`
+`$ sudo nano /etc/dphys-swapfile`
 
-`sudo /etc/init.d/dphys-swapfile stop`
+`$ sudo /etc/init.d/dphys-swapfile stop`
 
-`sudo /etc/init.d/dphys-swapfile start`
+`$ sudo /etc/init.d/dphys-swapfile start`
+
+## Docker
+
+1. Remove old version of Docker if necessarry:
+
+`$ sudo apt-get remove docker docker-engine docker.io containerd runc`
+
+2. Install Docker using the convenience script:
+
+`$ curl -fsSL https://get.docker.com -o get-docker.sh`
+
+`$ sudo sh get-docker.sh`
+
+`$ sudo usermod -aG docker pi`
 
 ## LTE 4g
 
-`sudo apt-get -y install ppp wvdial usb-modeswitch`
+`$ sudo apt-get -y install ppp wvdial usb-modeswitch`
 
 Edit: `/etc/wvdial.conf`
 
@@ -98,9 +112,9 @@ iface ppp0 inet wvdial
 
 Testing connection:
 
-`sudo wvdial & disown`
+`$ sudo wvdial & disown`
 
->Note: disown allows you to close the terminal
+>Note: `disown` allows you to close the terminal
 
 Create: `/home/pi/modemstart.sh`
 
@@ -110,7 +124,7 @@ ifdown ppp0
 ifup ppp0 
 ```
 
-`sudo chmod +x /home/pi/modemstart.sh`
+`$ sudo chmod +x /home/pi/modemstart.sh`
 
 Edit: `/etc/rc.local`
 
@@ -122,29 +136,13 @@ sh '/home/pi/modemstart.sh'
 
 **Install**
 
-`sudo wget https://www.vpn.net/installers/logmein-hamachi_2.1.0.203-1_armhf.deb`
+`$ sudo wget https://www.vpn.net/installers/logmein-hamachi_2.1.0.203-1_armhf.deb`
 
-`sudo dpkg -i logmein-hamachi_2.1.0.203-1_armhf.deb`
+`$ sudo dpkg -i logmein-hamachi_2.1.0.203-1_armhf.deb`
 
 **CLI**
 
-`sudo hamachi login`
-
-`sudo hamachi`
-
-**GUI**
-
-[https://www.haguichi.net/](https://www.haguichi.net/)
-
-`sudo apt install dirmngr`
-
-`sudo sh -c 'echo "deb http://ppa.launchpad.net/webupd8team/haguichi/ubuntu bionic main" > /etc/apt/sources.list.d/haguichi.list'`
-
-`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C2518248EEA14886`
-
-`sudo apt update`
-
-`sudo apt install -y haguichi`
+`$ sudo hamachi login`
 
 **Settings**
 
@@ -153,29 +151,35 @@ sh '/home/pi/modemstart.sh'
 |LogMeIn account |	psaghelyi@gmail.com	| 12***99 |
 |Network-id	| 345-995-738 | t***6 |
  
-`hamachi join <Network-id>`
+`$ sudo hamachi join <Network-id>`
 
+**GUI**
 
-Edit: `/etc/rc.local`
+[https://www.haguichi.net/](https://www.haguichi.net/)
 
-```
-hamachi login
-```
->Right after the modemstart
+`$ sudo apt install dirmngr`
+
+`$ sudo sh -c 'echo "deb http://ppa.launchpad.net/webupd8team/haguichi/ubuntu bionic main" > /etc/apt/sources.list.d/haguichi.list'`
+
+`$ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C2518248EEA14886`
+
+`$ sudo apt update`
+
+`$ sudo apt install -y haguichi`
 
 ## MAVLink and Python
 
 >Disable the OS control of the serial port with raspi-config
 
-`sudo apt-get install screen`
+`$ sudo apt-get install screen`
 
-`sudo pip install mavproxy`
+`$ sudo pip install mavproxy`
 
 **Test:**
 
-`sudo -s`
+`$ sudo -s`
 
-`mavproxy.py --master=/dev/ttyAMA0,921600 --aircraft=MyCopter`
+`$ mavproxy.py --master=/dev/ttyAMA0,921600 --aircraft=MyCopter`
 
 >Note: on rPI3 ttyS0 is the serial port
 
@@ -209,15 +213,15 @@ Whenever the RPi connects to the Pixhawk, three files will be created in the `/h
 
 If you wish to connect to the MAVProxy application that has been automatically started you can log into the RPi and type:
 
-`sudo screen -x`
+`$ sudo screen -x`
 
 ## Camera and Broadcasting
 
 **Update firmware:**
 
-`sudo apt-get install rpi-update`
+`$ sudo apt-get install rpi-update`
 
-`sudo rpi-update`
+`$ sudo rpi-update`
 
 **Start camera at boot**
 
@@ -232,10 +236,18 @@ Edit: `/etc/rc.local`
 ```
 
 >Note: 
->- Rotation  `-rot 180`
->- Video stabilization: `-vs`
->- Insert PPS, SPS headers: `-ih`
->- Insert timing information into the SPS block: `-stm`
+>- Set bitrate: `--bitrate,    -b`
+>- Listen on port: `--listen,    -l`
+>- Rotation:  `-rot 180`
+>- Specify the intra refresh period (key frame rate/GoP): `--intra,    -g`
+>- Specify H264 profile to use for encoding (baseline, main, high): `--profile,    -pf`
+>- Specifies the H264 encoder level to use for encoding. Options are 4, 4.1, and  4.2: `--level,    -lev`
+>-Sets the H264 intra-refresh type. Possible options are cyclic, adaptive,  both, and cyclicrows: `--irefresh,    -if`
+>- Video stabilization: `--vstab,    -vs`
+>- Insert PPS, SPS headers: `--inline,    -ih`
+>- Insert timing information into the SPS block: `--spstimings,    -stm`
+>- Forces a flush of output data buffers as soon as video data is written: `--flush,    -fl`
+
 
 **Using screen**
 
@@ -244,11 +256,11 @@ Create: `/home/pi/camerastart.sh`
 ```
 #!/bin/bash
 while : ; do
-  /usr/bin/raspivid -t 0 -n -a 12 -b 1500000 -pf high --mode 5 -fps 25 -g 50 --flush -l -o tcp://0.0.0.0:5004 -rot 180
+  /usr/bin/raspivid -t 0 -n -a 12 -b 2000000 -pf high --mode 5 -fps 30 -g 60 --flush -l -o tcp://0.0.0.0:5004 -rot 180
 done
 ```
 
-`sudo chmod +x /home/pi/camerastart.sh`
+`$ sudo chmod +x /home/pi/camerastart.sh`
 
 Edit: `/etc/rc.local`
 
@@ -256,8 +268,9 @@ Edit: `/etc/rc.local`
 screen -dm -S mavlink camerastart
 ```
 
->-d -m Start screen in "detached" mode
->-S When creating a new session, this option can be used to specify a meaningful name for the session.
+>`-d -m` Start screen in "detached" mode
+
+>`-S` When creating a new session, this option can be used to specify a meaningful name for the session.
 
 
 **PC raw TCP receiver:**
@@ -303,6 +316,32 @@ Version 2.x (IMX219)
 |5	|1640x922	|16:9	|0.1-40fps	|Full	|2x2
 |6	|1280x720	|16:9	|40-90fps	|Partial	|2x2
 |7	|640x480	|4:3	|40-200fps1	|Partial	|2x2
+
+>[raspi camera docs](https://www.raspberrypi.org/documentation/raspbian/applications/camera.md)
+
+### RTP payload
+
+Install GStreamer 1.0 (full):
+
+`$ sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-pulseaudio`
+
+High quality:
+
+`$ raspivid -n -t 0 -rot 180 -w 960 -h 720 -fps 30 -b 2000000 -co 60 -sh 30 -sa 10 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=#LOCALIP# port=5000`
+
+Med quality:
+
+`$ raspivid -n -t 0 -rot 180 -w 640 -h 480 -fps 30 -b 600000 -co 60 -sh 40 -sa 10 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=#LOCALIP# port=5000`
+
+Low quality:
+
+`$ raspivid -n -t 0 -rot 180 -w 320 -h 240 -fps 30 -b 250000 -co 60 -sh 50 -sa 10 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=#LOCALIP# port=5000`
+
+TCP:
+
+raspivid -t 0 -n -a 12 -b 2000000 -pf high --mode 5 -fps 30 -g 60 --flush -o - | gst-launch-1.0 -v fdsrc ! h264parse !  rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=0.0.0.0 port=5000
+
+raspivid -t 0 -h 720 -w 1080 -fps 25 -hf -b 2000000 -o - | gst-launch-1.0 -v fdsrc ! h264parse !  rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=YOUR_RPI_IP_ADDRESS port=5000
 
 
 ## Bluetooth and RF Reader
