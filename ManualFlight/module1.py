@@ -3,185 +3,16 @@
 Simple script for take off and control with arrow keys
 """
 
-import time
-import threading
-from dronekit import connect, VehicleMode, LocationGlobalRelative, Command, LocationGlobal
-from pymavlink import mavutil
+from threading import Thread
+from mavcomm import mavcomm
+from controller import controller
 
 #- Importing Tkinter: sudo apt-get install python-tk
 import Tkinter as tk
 
-#-- Setup the commanded flying speed
-gnd_speed = 5 # [m/s]
-elev_speed = 1 # [m/s]
-
-#-- Setup the commanded jaw degree
-jaw_delta = 10 # [deg]
-
-#-- Global control variables
-velocity_x = 0
-velocity_y = 0
-velocity_z = 0
-jaw_angle = 0
-signal = False
 
 
-#-- Define arm and takeoff
-def arm_and_takeoff(altitude):
-
-   while not vehicle.is_armable:
-      print("waiting to be armable")
-      time.sleep(1)
-
-   print("Arming motors")
-   vehicle.mode = VehicleMode("GUIDED")
-   vehicle.armed = True
-
-   while not vehicle.armed:
-       time.sleep(1)
-
-   print("Taking Off")
-   vehicle.simple_takeoff(altitude)
-
-   while True:
-      v_alt = vehicle.location.global_relative_frame.alt
-      print(">> Altitude = %.1f m"%v_alt)
-      if v_alt >= altitude - 1.0:
-          print("Target altitude reached")
-          break
-      time.sleep(1)
-      
-
-#-- Define the function for sending mavlink velocity command in body frame
-def set_velocity_body(vehicle, vx, vy, vz):
-    """ Remember: vz is positive downward!!!
-    http://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html
-    
-    Bitmask to indicate which dimensions should be ignored by the vehicle 
-    (a value of 0b0000000000000000 or 0b0000001000000000 indicates that 
-    none of the setpoint dimensions should be ignored). Mapping: 
-    bit 1: x,  bit 2: y,  bit 3: z, 
-    bit 4: vx, bit 5: vy, bit 6: vz
-    """
-    msg = vehicle.message_factory.set_position_target_local_ned_encode(
-            0, # time_boot_ms (not used)
-            0, 0, # target_system, target_component
-            mavutil.mavlink.MAV_FRAME_BODY_NED, # frame
-            0b0000111111000111, #-- BITMASK -> Consider only the velocities
-            0, 0, 0,        #-- POSITION
-            vx, vy, vz,     #-- VELOCITY
-            0, 0, 0,        #-- ACCELERATIONS (not supported yet, ignored in GCS_Mavlink)
-            0, 0) 			# yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
-    vehicle.send_mavlink(msg)
-    vehicle.flush()
-    
-
-#-- Define the function for sending mavlink condition jaw command
-def set_condition_yaw(vehicle, heading, relative=False):
-    if relative:
-        is_relative=1 #yaw relative to direction of travel
-    else:
-        is_relative=0 #yaw is an absolute angle
-    # create the CONDITION_YAW command using command_long_encode()
-    msg = vehicle.message_factory.command_long_encode(
-        0, 0,    # target system, target component
-        mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
-        0, #confirmation
-        heading,    # param 1, yaw in degrees
-        0,          # param 2, yaw speed deg/s
-        1,          # param 3, direction -1 ccw, 1 cw
-        is_relative, # param 4, relative offset 1, absolute angle 0
-        0, 0, 0)    # param 5 ~ 7 not used
-    # send command to vehicle
-    vehicle.send_mavlink(msg)
-    vehicle.flush()
-
-
-def send_command(stop_event, arg):
-    global jaw_angle, velocity_x, velocity_y, velocity_z, signal    
-    while not stop_event.wait(1):
-        if signal:
-            set_velocity_body(vehicle, velocity_x, velocity_y, velocity_z)
-            set_condition_yaw(vehicle,jaw_angle)
-    print("send_command loop is stopping.")
-
-
-#-- Key event function
-def key(history):
-    global gnd_speed, jaw_angle, jaw_delta, velocity_x, velocity_y, velocity_z, signal
-
-    if 't' in history:
-        print("t pressed >> Arm and take off")
-        arm_and_takeoff(10)
-        signal = True
-        return
-
-    if 'r' in history:
-        print("r pressed >> Set the vehicle mode to RTL")
-        #signal = False
-        vehicle.mode = VehicleMode("RTL")
-        return
-
-    if 'l' in history:
-        print("l pressed >> Set the vehicle mode to LAND")
-        signal = False
-        vehicle.mode = VehicleMode("LAND")
-        return
-
-    if 'space' in history:
-        print("Space pressed >> Set the vehicle mode to GUIDED")
-        vehicle.mode = VehicleMode("GUIDED")
-        while not vehicle.mode.name=='GUIDED':  #Wait until mode has changed
-            print(" Waiting for mode change ...")
-            time.sleep(1)
-        velocity_x = 0
-        velocity_y = 0
-        velocity_z = 0
-        jaw_angle = 0
-        signal = True
-        return
-
-    if '1' in history:
-        gnd_speed =  5 # 18 km/h
-    elif '2' in history:
-        gnd_speed = 10 # 36 km/h
-    elif '3' in history:
-        gnd_speed = 15 # 54 km/h
-    elif '4' in history:
-        gnd_speed = 20 # 72 km/h
-    elif '5' in history:
-        gnd_speed = 25 # 90 km/h
-
-    velocity_x = -gnd_speed if 'Down' in history else gnd_speed if 'Up' in history else 0
-    velocity_y = -gnd_speed if 'a' in history else gnd_speed if 'd' in history else 0
-    velocity_z = -elev_speed if 'w' in history else elev_speed if 's' in history else 0
-    
-    if 'Left' in history: # turn left            
-        jaw_angle -= jaw_delta
-        if jaw_angle < 0:
-            jaw_angle += 360            
-    elif 'Right' in history:  # turn right
-        jaw_angle += jaw_delta
-        if jaw_angle > 360:
-            jaw_angle -= 360
-
-
-history = []
-def keyup(event):
-    if event.keysym in history :
-        history.pop(history.index(event.keysym))
-        key(history)
-
-
-def keydown(event):
-    if not event.keysym in history :
-        history.append(event.keysym)
-        key(history)
-
-
-
-
-class MainWnd:
+class Demo1:
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)
@@ -190,9 +21,9 @@ class MainWnd:
         self.frame.pack()
     def new_window(self):
         self.newWindow = tk.Toplevel(self.master)
-        self.app = ChildWnd(self.newWindow)
+        self.app = Demo2(self.newWindow)
 
-class ChildWnd:
+class Demo2:
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(self.master)
@@ -205,33 +36,26 @@ class ChildWnd:
 
 
 if __name__ == "__main__":
-    #-- Connect to the vehicle
-    print('Connecting...')
-    vehicle = connect('udp:0.0.0.0:14551')
-    print(vehicle.mode.name)
+    
+    mc = mavcomm('udp:0.0.0.0:14551')
+    #mc = mavcomm('udp:25.22.42.122:14551')
 
-    #-- Start the comand sender thread
-    pill2kill = threading.Event()
-    t = threading.Thread(target=send_command, args=(pill2kill, "loop1"))
+    # starting command loop        
+    t = Thread(target=mc.send_command)
     t.start()
 
-    #-- Init main window and start main loop
     root = tk.Tk()
     root.geometry('200x100')
-    app = MainWnd(root)
+    app = Demo1(root)
 
-    root.bind_all("<KeyPress>", keydown)
-    root.bind_all("<KeyRelease>", keyup)
+
+    ctr = controller(mc)
+    root.bind_all("<KeyPress>", ctr.keydown)
+    root.bind_all("<KeyRelease>", ctr.keyup)
     
     root.mainloop()
- 
-    #-- Stop command sender thread
-    pill2kill.set()
+
+    mc.stop = True
     t.join()
-
-    #-- Close the connection to the drone
-    print("Close vehicle object")
-    vehicle.close()
-
-    #-- Close tkinter 
-    root.quit()
+ 
+ 

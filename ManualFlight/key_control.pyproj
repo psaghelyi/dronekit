@@ -23,6 +23,12 @@
     <InterpreterReference Include="Global|PythonCore|2.7" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="controller.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="mavcomm.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="module1.py">
       <SubType>Code</SubType>
     </Compile>
