@@ -343,6 +343,31 @@ RaspberryPi TCP server:
 `$ raspivid -t 0 -n -a 12 -b 2000000 -pf high --mode 5 -fps 30 -g 60 --flush -rot 180 -o - | gst-launch-1.0 -e fdsrc ! h264parse ! rtph264pay config-interval=5 pt=96 ! gdppay ! tcpserversink port=5004 host=0.0.0.0`
 
 
+### RTP payload
+
+Install GStreamer 1.0 (full):
+
+`$ sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-pulseaudio`
+
+High quality:
+
+`$ raspivid -n -t 0 -rot 180 -w 960 -h 720 -fps 30 -b 2000000 -co 60 -sh 30 -sa 10 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=#LOCALIP# port=5000`
+
+Med quality:
+
+`$ raspivid -n -t 0 -rot 180 -w 640 -h 480 -fps 30 -b 600000 -co 60 -sh 40 -sa 10 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=#LOCALIP# port=5000`
+
+Low quality:
+
+`$ raspivid -n -t 0 -rot 180 -w 320 -h 240 -fps 30 -b 250000 -co 60 -sh 50 -sa 10 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=#LOCALIP# port=5000`
+
+TCP:
+
+raspivid -t 0 -n -a 12 -b 2000000 -pf high --mode 5 -fps 30 -g 60 --flush -o - | gst-launch-1.0 -v fdsrc ! h264parse !  rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=0.0.0.0 port=5000
+
+raspivid -t 0 -h 720 -w 1080 -fps 25 -hf -b 2000000 -o - | gst-launch-1.0 -v fdsrc ! h264parse !  rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=YOUR_RPI_IP_ADDRESS port=5000
+
+
 ## Bluetooth and RF Reader
 
 
