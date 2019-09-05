@@ -223,6 +223,13 @@ If you wish to connect to the MAVProxy application that has been automatically s
 
 `$ sudo rpi-update`
 
+**Disable LED:**
+
+Edit. `/boot/config.txt`
+```
+disable_camera_led=1
+```
+
 **Start camera at boot**
 
 Edit: `/etc/rc.local`
@@ -343,7 +350,7 @@ RaspberryPi TCP server:
 `$ raspivid -t 0 -n -a 12 -b 2000000 -pf high --mode 5 -fps 30 -g 60 --flush -rot 180 -o - | gst-launch-1.0 -e fdsrc ! h264parse ! rtph264pay config-interval=5 pt=96 ! gdppay ! tcpserversink port=5004 host=0.0.0.0`
 
 
-### RTP payload
+### RTP payload using Gstreamer:
 
 Install GStreamer 1.0 (full):
 
@@ -367,8 +374,38 @@ raspivid -t 0 -n -a 12 -b 2000000 -pf high --mode 5 -fps 30 -g 60 --flush -o - |
 
 raspivid -t 0 -h 720 -w 1080 -fps 25 -hf -b 2000000 -o - | gst-launch-1.0 -v fdsrc ! h264parse !  rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=YOUR_RPI_IP_ADDRESS port=5000
 
+### Using [picam](https://github.com/iizukanao/picam)
 
-## Bluetooth and RF Reader
+
+
+### Using FFMpeg
+
+Server:
+
+```
+raspivid --output - --mode 5 -pf high --nopreview --timeout 0 -fps 30 -g 60 --flush --annotate 12 -b 2000000 -rot 180 | \
+ffmpeg -use_wallclock_as_timestamps 1 -thread_queue_size 1024 -fflags nobuffer -framerate 30 -i - \
+       -thread_queue_size 1024 -f alsa -ar 44100 -channel_layout mono -ac 1 -i hw:1,0 \
+       -map 0:0 \
+       -c:v copy \
+       -map 1:0 \
+       -c:a aac \
+       -b:a 64k \
+       -f flv rtmp://a.rtmp.youtube.com/live2/4hgw-08x5-v70f-cbtm
+```
+
+### Using [v4l2 RTP Server](https://github.com/mpromonet/v4l2rtspserver):
+
+server:
+
+`v4l2rtspserver -W 1280 -H 720 /dev/video0,hw:1,0 -C 1`
+
+client:
+
+VLC: `rtsp://25.72.139.4:8554/unicast`
+
+### Using [node-rtrp-rtmp-server](https://github.com/iizukanao/node-rtsp-rtmp-server):
+
 
 
 
