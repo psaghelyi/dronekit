@@ -282,13 +282,13 @@ screen -dm -S mavlink camerastart
 
 **PC raw TCP receiver:**
 
-`gst-launch-1.0.exe tcpclientsrc host=rpi2 port=5004 ! h264parse ! avdec_h264 ! videoconvert ! autovideosink`
+`gst-launch-1.0.exe tcpclientsrc host=rpi2 port=5004 ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false`
 
-`(gst-launch-1.0.exe tcpclientsrc host=rpi2 port=5004 ! decodebin ! videoconvert ! autovideosink)`
+`(gst-launch-1.0.exe tcpclientsrc host=rpi2 port=5004 ! decodebin ! videoconvert ! autovideosink sync=false)`
 
 Save to file whilst watching:
 
-`gst-launch-1.0.exe -e tcpclientsrc host=raspberrypi port=5004 ! tee name=t ! queue ! qtmux ! filesink location=c:\\temp\\video.h264 t. ! queue ! h264parse ! avdec_h264 ! videoconvert ! autovideosink`
+`gst-launch-1.0.exe tcpclientsrc host=25.72.139.4 port=5004 ! tee name=t ! queue ! filesink location=c:\\temp\\video.h264  t. ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false`
 
 Convert to mp4:
 
@@ -373,31 +373,72 @@ gst-launch-1.0.exe tcpclientsrc host=25.72.139.4 port=5004 ! gdpdepay ! rtph264d
 
 ### Using FFMpeg
 
-Server:
+**RaspberryPi Server**
+
+FLV-RTMP - Audio from USB mic:
 
 ```
 raspivid --output - --mode 5 -pf high --nopreview --timeout 0 -fps 30 -g 60 --flush --annotate 12 -b 2000000 -rot 180 | \
-ffmpeg -use_wallclock_as_timestamps 1 -thread_queue_size 1024 -fflags nobuffer -framerate 30 -i - \
+ffmpeg -use_wallclock_as_timestamps 1 -thread_queue_size 1024 -f h264 -fflags nobuffer -framerate 30 -i - \
        -thread_queue_size 1024 -f alsa -ar 44100 -channel_layout mono -ac 1 -i hw:1,0 \
        -map 0:0 \
        -c:v copy \
        -map 1:0 \
        -c:a aac \
        -b:a 64k \
-       -f flv rtmp://a.rtmp.youtube.com/live2/4hgw-08x5-v70f-cbtm
+       -f flv rtmp://localhost/show/stream
 ```
+
+FLV-RTMP - Fake audio:
+
+```
+raspivid --output - --mode 5 -pf high --nopreview --timeout 0 -fps 30 -g 60 --flush --annotate 12 -b 2000000 -rot 180 | \
+ffmpeg -use_wallclock_as_timestamps 1 -thread_queue_size 1024 -f h264 -fflags nobuffer -framerate 30 -i - \
+       -re -ar 44100 -channel_layout mono -ac 1 -acodec pcm_s16le -f s16le -i /dev/zero \
+       -c:v copy \
+       -c:a aac -b:a 64k \
+       -f flv rtmp://localhost/show/stream
+```
+
+FLV-RTMP - No audio:
+
+```
+raspivid --output - --mode 5 -pf high --nopreview --timeout 0 -fps 30 -g 60 --flush --annotate 12 -b 2000000 -rot 180 | \
+ffmpeg -use_wallclock_as_timestamps 1 -thread_queue_size 1024 -f h264 -fflags nobuffer -framerate 30 -i - \
+       -c:v copy \
+       -f flv rtmp://localhost/show/stream
+```
+
+
+FLV-TCP - No audio:
+
+```
+raspivid --output - --mode 5 -pf high --nopreview --timeout 0 -fps 30 -g 60 --flush --annotate 12 -b 2000000 -rot 180 | \
+ffmpeg -use_wallclock_as_timestamps 1 -thread_queue_size 1024 -f h264 -fflags nobuffer -framerate 30 -i - \
+       -c:v copy \
+       -f flv tcp://0.0.0.0:5004?listen
+```
+
+FLV-TCP Client:
+```
+gst-launch-1.0.exe tcpclientsrc host=25.72.139.4 port=5004 ! flvdemux ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false
+```
+
 
 ### Using [v4l2 RTP Server](https://github.com/mpromonet/v4l2rtspserver):
 
 server:
 
-`v4l2rtspserver -W 1280 -H 720 /dev/video0,hw:1,0 -C 1`
+`v4l2rtspserver /dev/video0,hw:1,0 -C 1`
+
+>Note: latency is much less then using nginx RTMP
 
 client:
 
 VLC: `rtsp://25.72.139.4:8554/unicast`
 
 ### Using [node-rtrp-rtmp-server](https://github.com/iizukanao/node-rtsp-rtmp-server):
+
 
 
 
