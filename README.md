@@ -424,6 +424,14 @@ FLV-TCP Client:
 gst-launch-1.0.exe tcpclientsrc host=25.72.139.4 port=5004 ! flvdemux ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false
 ```
 
+FLV-TCP Client + file:
+
+```
+gst-launch-1.0.exe -e tcpclientsrc host=25.72.139.4 port=5004 ! tee name=t  t. ! queue ! flvdemux ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false  t. ! queue ! filesink location=c:\\temp\\video.flv
+```
+
+
+
 
 ### Using [v4l2 RTP Server](https://github.com/mpromonet/v4l2rtspserver):
 
@@ -439,6 +447,14 @@ VLC: `rtsp://25.72.139.4:8554/unicast`
 
 ### Using [node-rtrp-rtmp-server](https://github.com/iizukanao/node-rtsp-rtmp-server):
 
+
+## Remote Camera pan-tilt control
+
+`$ sudo apt-get install pigpio`
+
+To automate running the daemon at boot time, run:
+
+`$ sudo systemctl enable pigpiod`
 
 
 

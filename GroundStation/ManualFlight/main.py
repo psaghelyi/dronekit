@@ -8,7 +8,7 @@ from mavcomm import mavcomm
 from controller import controller
 
 #- Importing Tkinter: sudo apt-get install python-tk
-import Tkinter as tk
+import tkinter as tk
 
 
 
@@ -34,21 +34,41 @@ class Demo2:
         self.master.destroy()
 
 
+class Application(tk.Frame):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.master = master
+        self.pack()
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.hi_there = tk.Button(self)
+        self.hi_there["text"] = "Hello World\n(click me)"
+        self.hi_there["command"] = self.say_hi
+        self.hi_there.pack(side="top")
+
+        self.quit = tk.Button(self, text="QUIT", fg="red",
+                              command=self.master.destroy)
+        self.quit.pack(side="bottom")
+
+    def say_hi(self):
+        print("hi there, everyone!")
+
+
 
 if __name__ == "__main__":
-    
-    mc = mavcomm('udp:0.0.0.0:14551')
-    #mc = mavcomm('udp:25.22.42.122:14551')
+    root = tk.Tk()
+    root.geometry('200x100')
+    app = Application(master=root)
 
+
+    mc = mavcomm('udp:0.0.0.0:14551')
+    
     # starting command loop        
     t = Thread(target=mc.send_command)
     t.start()
 
-    root = tk.Tk()
-    root.geometry('200x100')
-    app = Demo1(root)
-
-
+    # bind keys
     ctr = controller(mc)
     root.bind_all("<KeyPress>", ctr.keydown)
     root.bind_all("<KeyRelease>", ctr.keyup)
@@ -57,5 +77,6 @@ if __name__ == "__main__":
 
     mc.stop = True
     t.join()
+
  
  
