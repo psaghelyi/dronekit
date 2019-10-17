@@ -3,8 +3,8 @@ from pymavlink import mavutil
 from dronekit import connect, VehicleMode #, LocationGlobalRelative, Command, LocationGlobal
 
 
-class mavcomm(object):
-    """description of class"""
+class mavcomm:
+    """MAVLink communication class"""
     
     def __init__(self, ip):
         self.velocity_x = 0
@@ -14,8 +14,8 @@ class mavcomm(object):
         self.stop = False
     
         #-- Connect to the vehicle
-        print('Connecting...')
-        self.vehicle = connect(ip, wait_ready=True)  # accept UDP from anywhere
+        print(f'Connecting to {ip}...')
+        self.vehicle = connect(ip, wait_ready=True)  # accept UDP from ip
        
 
     #-- Define the function for sending mavlink velocity command in body frame
@@ -38,6 +38,7 @@ class mavcomm(object):
                 self.velocity_x, self.velocity_y, self.velocity_z,     #-- VELOCITY
                 0, 0, 0,        #-- ACCELERATIONS (not supported yet, ignored in GCS_Mavlink)
                 0, 0) 			# yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
+        # send command to vehicle
         self.vehicle.send_mavlink(msg)        
     
 
@@ -70,7 +71,7 @@ class mavcomm(object):
                 time.sleep(1)
                 retry += 1
                 if retry > 5:
-                    return
+                    return False
 
             print("Arming motors")
             self.vehicle.mode = VehicleMode("GUIDED")
@@ -80,7 +81,7 @@ class mavcomm(object):
                 time.sleep(1)
                 retry += 1
                 if retry > 5:
-                    return
+                    return False
 
         print("Taking Off")
         self.vehicle.simple_takeoff(altitude)
@@ -91,13 +92,13 @@ class mavcomm(object):
             print(">> Altitude = %.1f m"%v_alt)
             if v_alt >= altitude - 1.0:
                 print("Target altitude reached")
-                break
+                return True
             time.sleep(1)
             retry += 1
             if retry > 10:
-                return
-
+                return False
     
+
     def init_rtl(self):
         self.vehicle.mode = VehicleMode("RTL")
 
@@ -106,7 +107,8 @@ class mavcomm(object):
         self.vehicle.mode = VehicleMode("GUIDED")
 
 
-    def is_armed(self):
+    @property
+    def armed(self):
         return self.vehicle.armed
 
 

@@ -3,13 +3,11 @@
 Simple script for take off and control with arrow keys
 """
 
-from threading import Thread
 from mavcomm import mavcomm
 from controller import controller
 
 #- Importing Tkinter: sudo apt-get install python-tk
 import tkinter as tk
-
 
 
 class Demo1:
@@ -61,12 +59,8 @@ if __name__ == "__main__":
     root.geometry('200x100')
     app = Application(master=root)
 
-
+    # connect flight controller
     mc = mavcomm('udp:0.0.0.0:14551')
-    
-    # starting command loop        
-    t = Thread(target=mc.send_command)
-    t.start()
 
     # bind keys
     ctr = controller(mc)
@@ -74,9 +68,6 @@ if __name__ == "__main__":
     root.bind_all("<KeyRelease>", ctr.keyup)
     
     root.mainloop()
-
-    mc.stop = True
-    t.join()
 
  
  
