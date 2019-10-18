@@ -12,11 +12,11 @@ class mavcomm:
         self.velocity_z = 0
         self.jaw_angle = 0
         self.stop = False
-    
+
         #-- Connect to the vehicle
         print(f'Connecting to {ip}...')
         self.vehicle = connect(ip, wait_ready=True)  # accept UDP from ip
-       
+
 
     #-- Define the function for sending mavlink velocity command in body frame
     def set_velocity_body(self):
@@ -100,11 +100,14 @@ class mavcomm:
     
 
     def init_rtl(self):
+        self.vehicle.parameters["RTL_ALT"] = 1500.0 # 15 m
+        self.vehicle.parameters["WPNAV_SPEED"] = 1000.0  # 10 m/s
         self.vehicle.mode = VehicleMode("RTL")
 
 
-    def abort_rtl(self):
+    def abort_mission(self):
         self.vehicle.mode = VehicleMode("GUIDED")
+        self.vehicle.parameters["WPNAV_SPEED"] = 500
 
 
     @property

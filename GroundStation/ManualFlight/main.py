@@ -69,5 +69,7 @@ if __name__ == "__main__":
     
     root.mainloop()
 
+    ctr.stop_command_loop()
+
  
  

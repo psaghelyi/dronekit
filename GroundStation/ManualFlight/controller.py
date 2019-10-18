@@ -3,7 +3,7 @@ from threading import Thread
 class controller:
     """description of class"""
     
-    default_altitude = 10 # [m]
+    init_altitude = 10 # [m]
     jaw_delta = 10 # [deg]
 
 
@@ -12,9 +12,9 @@ class controller:
         self.elev_speed = 1 # [m/s]
         self.mc = mavcomm
         self.history = []
-        self.t = Thread(target=self.mc.send_command)    
-        if self.mc.armed:
-            self.mc.abort_rtl()
+        self.mc.stop = True
+        self.mc.abort_mission()
+        if self.mc.armed:            
             self.current_mode = "air"
             self.start_command_loop()
         else: 
@@ -22,15 +22,18 @@ class controller:
 
 
     def start_command_loop(self):
-        self.mc.stop = False       
-        self.t.start()
-        print("command loop started")
+        if self.mc.stop:
+            self.t = Thread(target=self.mc.send_command)    
+            self.mc.stop = False       
+            self.t.start()
+            print("command loop started")
 
 
     def stop_command_loop(self):
-        self.mc.stop = True       
-        self.t.join()
-        print("command loop stopped")
+        if not self.mc.stop:
+            self.mc.stop = True       
+            self.t.join()
+            print("command loop stopped")
 
 
     #-- Key event function
@@ -38,22 +41,22 @@ class controller:
         if 't' in self.history:
             if self.current_mode == "ground":
                 print("t pressed ->> TakeOff")
-                if self.mc.arm_and_takeoff(controller.default_altitude):
+                if self.mc.arm_and_takeoff(controller.init_altitude):
                     self.current_mode = "air"
                     self.start_command_loop()
             return
 
         if 'r' in self.history:
             if self.current_mode == "air":
-                print("r pressed ->> Set the vehicle to RTL")
+                print("r pressed ->> Set mission to RTL")
                 self.mc.init_rtl()
                 self.current_mode = "mission"
             return
 
         if 'space' in self.history:
             if self.current_mode == "mission":
-                print("<space> pressed ->> Set the vehicle to Guided")
-                self.mc.abort_rtl()
+                print("<space> pressed ->> Abort mission")
+                self.mc.abort_mission()
                 if self.mc.armed:
                     self.current_mode = "air" 
                 else:
