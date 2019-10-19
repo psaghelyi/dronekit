@@ -1,11 +1,5 @@
 version: "3"
 services:
   simulator:
-    build: ./Simulator
-    expose:
-      - "5760"
-  proxy:
-    build: ./MAVProxy
-    depends_on: 
-      - simulator
+    build: .
     tty: true
