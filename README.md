@@ -161,6 +161,10 @@ sh '/home/pi/modemstart.sh'
  
 `$ sudo hamachi join <Network-id>`
 
+autostart:
+edit `/etc/rc.local`
+add `hamachi login`
+
 **GUI**
 
 [https://www.haguichi.net/](https://www.haguichi.net/)
