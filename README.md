@@ -78,6 +78,14 @@ dtoverlay=pi3-disable-bt
 
 `$ sudo usermod -aG docker pi`
 
+note: on SSL error
+```
+$ cd /usr/local/share/ca-certificates
+$ sudo wget https://curl.haxx.se/ca/cacert.pem
+$ sudo mv cacert.pem cacert.crt
+$ sudo update-ca-certificates
+```
+
 ## LTE 4g
 
 `$ sudo apt-get -y install ppp wvdial usb-modeswitch`
