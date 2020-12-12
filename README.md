@@ -56,6 +56,12 @@ dtoverlay=pi3-disable-bt
 
 `$ sudo modprobe bcm2835-v4l2 gst_v4l2src_is_broken=1`
 
+make it permanent:
+
+`sudo nano /etc/modules`
+
+put `bcm2835-v4l2` to the end then reboot
+
 **Optionally change swap size to 1024:**
 
 `$ sudo nano /etc/dphys-swapfile`
