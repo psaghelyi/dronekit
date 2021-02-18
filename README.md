@@ -165,11 +165,17 @@ sh '/home/pi/modemstart.sh'
 |LogMeIn account |	psaghelyi@gmail.com	| 12***99 |
 |Network-id	| 345-995-738 | t***6 |
  
-`$ sudo hamachi join <Network-id>`
+`$ service logmein-hamachi stop`
 
-autostart:
-edit `/etc/rc.local`
-add `hamachi login`
+`$ service logmein-hamachi start`
+
+Start hamachi at boot
+
+`$ systemctl enable logmein-hamachi`
+
+`$ hamachi login`
+
+`$ sudo hamachi join <Network-id>`
 
 **GUI**
 
