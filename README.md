@@ -26,6 +26,16 @@ network={
 -   Enable serial, disable boot logs export to serial
 -   Enable camera
 
+`$ export LANGUAGE=en_US.UTF-8`
+
+`$ export LANG=en_US.UTF-8`
+
+`$ export LC_ALL=en_US.UTF-8`
+
+`$ locale-gen en_US.UTF-8`
+
+`$ dpkg-reconfigure locales`
+
  **Check/set ttyAMA0 speed:**
 
 `$ sudo stty -F /dev/ttyAMA0 921600`
