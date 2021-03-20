@@ -12,7 +12,9 @@ edit `/boot/wpa_supplicant.conf`
 country=HU
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
+
 network={
+  scan_ssid=1
   ssid="your_real_wifi_ssid"
   psk="your_real_password"
 }
